@@ -33,8 +33,8 @@ $ProgramName = 'APK-Info'
 Opt("TrayMenuMode", 1)
 Opt("TrayIconHide", 1)
 
-;~ $Debug = False
-$Debug = True ; Debug
+$Debug = False
+;$Debug = True ; Debug
 
 $ScriptDir = @ScriptDir
 If @Compiled == 0 Then $ScriptDir &= '\..'
@@ -797,7 +797,13 @@ Func _OpenNewFile($apk, $progress = True)
 	ProgressSet(0, $fileAPK, $strSignature & '...')
 
 	$processSignature = False
-	If $CheckSignature == 1 Then $processSignature = _Run('apksigner', '"' & $JavaPath & 'java" -jar "' & $ApksignerPath & 'apksigner.jar" verify --v --print-certs "' & $fullPathAPK & '"', $STDERR_CHILD + $STDOUT_CHILD)
+	If $CheckSignature == 1 Then
+		If FileExists($fullPathAPK & ".idsig") Then
+			$processSignature = _Run('apksigner', '"' & $JavaPath & 'java" -jar "' & $ApksignerPath & 'apksigner.jar" verify --v --print-certs --v4-signature-file "' & $fullPathAPK & '.idsig" "' & $fullPathAPK & '"', $STDERR_CHILD + $STDOUT_CHILD)
+		Else
+			$processSignature = _Run('apksigner', '"' & $JavaPath & 'java" -jar "' & $ApksignerPath & 'apksigner.jar" verify --v --print-certs "' & $fullPathAPK & '"', $STDERR_CHILD + $STDOUT_CHILD)
+		EndIf
+	EndIf
 
 	ProgressSet(1, $fileAPK, $strPkg & '...')
 
@@ -1019,7 +1025,13 @@ EndFunc   ;==>_LoadSignature
 Func _getSignature($prmAPK, $load, $process = False)
 	$output = ''
 	If $load == 1 Then
-		If $process == False Then $process = _Run('apksigner', '"' & $JavaPath & 'java" -jar "' & $ApksignerPath & 'apksigner.jar" verify --v --print-certs "' & $prmAPK & '"', $STDERR_CHILD + $STDOUT_CHILD)
+		If $process == False Then
+			If FileExists($prmAPK & ".idsig") Then
+				$process = _Run('apksigner', '"' & $JavaPath & 'java" -jar "' & $ApksignerPath & 'apksigner.jar" verify --v --print-certs --v4-signature-file "' & $prmAPK & '.idsig" "' & $prmAPK & '"', $STDERR_CHILD + $STDOUT_CHILD)
+			Else
+				$process = _Run('apksigner', '"' & $JavaPath & 'java" -jar "' & $ApksignerPath & 'apksigner.jar" verify --v --print-certs "' & $prmAPK & '"', $STDERR_CHILD + $STDOUT_CHILD)
+			EndIf
+		EndIf
 		$output &= _readAll($process, 'apksigner stdout')
 		$output &= _readAll($process, 'apksigner stderr', False)
 
